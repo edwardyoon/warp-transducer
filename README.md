@@ -4,14 +4,14 @@ This package provides PyTorch kernels that wrap the WarpRNNT library.
 
 ## Installation
 
-Install [PyTorch](https://github.com/pytorch/pytorch#installation).
+Install the latest [PyTorch](https://github.com/pytorch/pytorch#installation).
 
 `WARP_RNNT_PATH` should be set to the location of a built WarpRNNT
 (i.e. `libwarprnnt.so`).  This defaults to `../build`, so from within a
 new warp-transducer clone you could build WarpRNNT like this:
 
 ```bash
-git clone https://github.com/HawkAaron/warp-transducer
+git clone https://github.com/edwardyoon/warp-transducer
 cd warp-transducer
 mkdir build; cd build
 cmake ..
