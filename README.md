@@ -1,74 +1,96 @@
-# warp-transducer
-A fast parallel implementation of RNN Transducer (Graves 2013 joint network), on both CPU and GPU.
+# PyTorch binding for WarpRNNT
 
-[GPU implementation is now available for Graves2012 add network.](https://github.com/HawkAaron/warp-transducer/tree/add_network)
+This package provides PyTorch kernels that wrap the WarpRNNT library. 
 
-## GPU Performance
-Benchmarked on a GeForce GTX 1080 Ti GPU.
+## Installation
 
-| **T=150, L=40, A=28** | **warp-transducer** |
-| --------------------- | ------------------- |
-|         N=1           |      8.51 ms        |
-|         N=16          |      11.43 ms       |
-|         N=32          |      12.65 ms       |
-|         N=64          |      14.75 ms       |
-|         N=128         |      19.48 ms       |
+Install [PyTorch](https://github.com/pytorch/pytorch#installation).
 
-| **T=150, L=20, A=5000** | **warp-transducer** |
-| ----------------------- | ------------------- |
-|         N=1             |      4.79 ms        |
-|         N=16            |      24.44 ms       |
-|         N=32            |      41.38 ms       |
-|         N=64            |      80.44 ms       |
-|         N=128           |      51.46 ms       |
+`WARP_RNNT_PATH` should be set to the location of a built WarpRNNT
+(i.e. `libwarprnnt.so`).  This defaults to `../build`, so from within a
+new warp-transducer clone you could build WarpRNNT like this:
 
-<!-- | **T=1500, L=300, A=50** | **warp-transducer** |
-| ----------------------- | ------------------- |
-|         N=1             |      570.33 ms      |
-|         N=16            |      768.57 ms      |
-|         N=32            |      955.05 ms      |
-|         N=64            |      569.34 ms      |
-|         N=128           |      -              |
- -->
-
-## Interface
-The interface is in `include/rnnt.h`. It supports CPU or GPU execution, and you can specify OpenMP parallelism
-if running on the CPU, or the CUDA stream if running on the GPU. We took care to ensure that the library does not 
-preform memory allocation internally, in oder to avoid synchronizations and overheads caused by memory allocation.
-
-## Compilation
-warp-transducer has been tested on Ubuntu 16.04 and CentOS 7. Windows is not supported at this time.
-
-First get the code:
 ```bash
 git clone https://github.com/HawkAaron/warp-transducer
 cd warp-transducer
-```
-create a build directory:
-```bash
-mkdir build
-cd build
-```
-if you have a non standard CUDA install, add `-DCUDA_TOOLKIT_ROOT_DIR=/path/to/cuda` option to `cmake` so that CMake detects CUDA.
-
-Run cmake and build:
-```bash
+mkdir build; cd build
 cmake ..
 make
 ```
 
-The C library should now be built along with test executables. If CUDA was detected, then `test_gpu` will be built;
-`test_cpu` will always be built.
+Otherwise, set `WARP_RNNT_PATH` to wherever you have `libwarprnnt.so`
+installed. If you have a GPU, you should also make sure that
+`CUDA_HOME` is set to the home cuda directory (i.e. where
+`include/cuda.h` and `lib/libcudart.so` live). For example:
 
-## Test
-To run the tests, make sure the CUDA libraries are in `LD_LIBRARY_PATH` (DYLD_LIBRARY_PATH for OSX).
+```
+export CUDA_HOME="/usr/local/cuda"
+```
 
-## Contributing
-We welcome improvements from the community, please feel free to submit pull requests.
+Now install the bindings: (Please make sure the GCC version >= 4.9)
+```
+cd pytorch_binding
+python setup.py install
+```
 
-## Reference
-* [Sequence Transduction with Recurrent Neural Networks](https://arxiv.org/abs/1211.3711)
-* [SPEECH RECOGNITION WITH DEEP RECURRENT NEURAL NETWORKS](https://arxiv.org/pdf/1303.5778.pdf)
-* [Baidu warp-ctc](https://github.com/baidu-research/warp-ctc)
-* [Awni implementation of transducer](https://github.com/awni/transducer)
+If you try the above and get a dlopen error on OSX with anaconda3 (as recommended by pytorch):
+```
+cd ../pytorch_binding
+python setup.py install
+cd ../build
+cp libwarprnnt.dylib /Users/$WHOAMI/anaconda3/lib
+```
+This will resolve the library not loaded error. This can be easily modified to work with other python installs if needed.
 
+Example to use the bindings below.
+
+```python
+import torch
+from warprnnt_pytorch import RNNTLoss
+rnnt_loss = RNNTLoss()
+cuda = False # whether use GPU version
+acts = torch.FloatTensor([[[[0.1, 0.6, 0.1, 0.1, 0.1],
+                            [0.1, 0.1, 0.6, 0.1, 0.1],
+                            [0.1, 0.1, 0.2, 0.8, 0.1]],
+                            [[0.1, 0.6, 0.1, 0.1, 0.1],
+                            [0.1, 0.1, 0.2, 0.1, 0.1],
+                            [0.7, 0.1, 0.2, 0.1, 0.1]]]])
+labels = torch.IntTensor([[1, 2]])
+act_length = torch.IntTensor([2])
+label_length = torch.IntTensor([2])
+if cuda: 
+    acts = acts.cuda()
+    labels = labels.cuda()
+    act_length = act_length.cuda()
+    label_length = label_length.cuda()
+else:
+    # if use CPU loss, then take log_softmax first
+    acts = torch.nn.functional.log_softmax(
+        torch.autograd.Variable(acts), dim=3
+    ).data
+
+acts = torch.autograd.Variable(acts, requires_grad=True)
+labels = torch.autograd.Variable(labels)
+act_length = torch.autograd.Variable(act_length)
+label_length = torch.autograd.Variable(label_length)
+loss = rnnt_loss(acts, labels, act_length, label_length)
+loss.backward()
+```
+
+## Documentation
+
+```python
+RNNTLoss(size_average=True, blank_label=0):
+    """
+    size_average (bool): normalize the loss by the batch size (default: True)
+    blank_label (int): blank label index
+    """
+
+forward(acts, labels, act_lens, label_lens):
+    """
+    acts: Tensor of (batch x seqLength x labelLength x outputDim) containing output from network
+    labels: 2 dimensional Tensor containing all the targets of the batch with zero padded
+    act_lens: Tensor of size (batch) containing size of each output sequence from the network
+    label_lens: Tensor of (batch) containing label length of each example
+    """
+```
