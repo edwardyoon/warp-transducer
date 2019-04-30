@@ -1,6 +1,6 @@
 # Fast parallel RNN-transducer for PyTorch
 
-This project supports PyTorch 1.1 and CUDA 10.0
+This project supports PyTorch 1.1 and CUDA 10.0. This repository is fork version of https://github.com/HawkAaron/warp-transducer/tree/master/pytorch_binding.
 
 ## Installation
 
