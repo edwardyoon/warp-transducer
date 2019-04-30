@@ -33,7 +33,7 @@ include_dirs = [os.path.realpath('../include')]
 
 setup(
     name='warprnnt_pytorch',
-    version="0.2",
+    version="0.3",
     description="PyTorch wrapper for RNN-Transducer",
     url="https://github.com/edwardyoon/warp-transducer",
     author="Edward J. Yoon",
