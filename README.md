@@ -29,7 +29,7 @@ export CUDA_HOME="/usr/local/cuda"
 
 Now install the bindings: (Please make sure the GCC version >= 4.9)
 ```
-cd pytorch_binding
+cd ../pytorch_binding
 python setup.py install
 ```
 
