@@ -61,6 +61,7 @@ label_length = torch.IntTensor([2])
 acts = torch.nn.functional.log_softmax(torch.autograd.Variable(acts), dim=3).data
 acts = torch.autograd.Variable(acts, requires_grad=True)
 
+# if you use CUDA
 acts.cuda()
 
 labels = torch.autograd.Variable(labels)
