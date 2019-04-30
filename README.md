@@ -1,6 +1,6 @@
-# PyTorch binding for WarpRNNT
+# Fast parallel RNN-transducer for PyTorch
 
-This package provides PyTorch kernels that wrap the WarpRNNT library. 
+This project supports PyTorch 1.1 and CUDA 10.0
 
 ## Installation
 
