@@ -3,7 +3,7 @@ import warprnnt_pytorch as warp_rnnt
 from torch.autograd import Function
 from torch.nn import Module
 
-from .warp_rnnt import *
+#from .warp_rnnt import *
 
 __all__ = ['RNNTLoss']
 
